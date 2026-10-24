@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<title>الخطة الأسبوعية</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Noto+Kufi+Arabic:wght@600;700&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="mark"><img id="logoSchool" alt="شعار مدارس دار الفرسان"></div>
+  <div class="ttl"><h1>الخطة الأسبوعية</h1><p id="sub"></p></div>
+  <div class="chips"><span class="chip" id="chipStore"><i></i><span>جارٍ التحقق من الحفظ</span></span><span class="chip" id="chipRole"><i></i><span></span></span><span class="chip warn" id="chipGaps"><i></i><span></span></span></div>
+</div></header>
+
+<main class="wrap sect">
+  <div class="grades" id="grades" role="tablist" aria-label="الصف"></div>
+  <div class="days" id="days" role="tablist" aria-label="اليوم"></div>
+  <div class="dayhead"><h2 id="dayTitle"></h2><span id="dayMeta"></span></div>
+  <div class="grid" id="grid" role="table"></div>
+  <p class="note">الحقول القابلة للتحرير: عنوان الدرس والملاحظات. المادة والفترة تأتيان من الجدول المحدث للصف. الحفظ تلقائي.</p>
+</main>
+
+<div id="layer"></div>
+<nav class="dock" aria-label="النوافذ"><div id="dock"></div></nav>
+<div id="toast" aria-live="polite"><span></span></div>
+
+<div id="login" hidden role="dialog" aria-modal="true" aria-labelledby="loginT"><div class="card">
+  <h2 id="loginT">الدخول إلى الخطة الأسبوعية</h2>
+  <p style="margin:0;color:var(--muted)">أدخل رمز دورك (مادة + صف) الذي وصلك من المنسق، أو افتح رابطك الخاص مباشرة.</p>
+  <label for="loginCode">رمز الدور</label>
+  <input id="loginCode" type="password" autocomplete="off" spellcheck="false">
+  <p id="loginMsg" role="alert"></p>
+  <button class="btn p" id="loginGo" type="button">دخول</button>
+  <button class="btn" id="loginGoogle" type="button" hidden>دخول المسؤول بحساب Google</button>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
