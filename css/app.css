@@ -201,3 +201,4 @@ table.dt tr{cursor:pointer} table.dt tr:hover td{background:var(--surface-2)}
   #printRoot .pg{break-after:page;page-break-after:always;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #printRoot .pg:last-child{break-after:auto;page-break-after:auto}
 }
+#login select,#login input[type=text]{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:inherit;width:100%;min-width:0;font:inherit;direction:rtl;text-align:start}

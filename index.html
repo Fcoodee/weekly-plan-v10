@@ -30,9 +30,14 @@
 
 <div id="login" hidden role="dialog" aria-modal="true" aria-labelledby="loginT"><div class="card">
   <h2 id="loginT">الدخول إلى الخطة الأسبوعية</h2>
-  <p style="margin:0;color:var(--muted)">أدخل رمز دورك (مادة + صف) الذي وصلك من المنسق، أو افتح رابطك الخاص مباشرة.</p>
-  <label for="loginCode">رمز الدور</label>
-  <input id="loginCode" type="password" autocomplete="off" spellcheck="false">
+  <label for="selStage">المرحلة</label>
+  <select id="selStage" disabled><option>المرحلة الابتدائية</option></select>
+  <label for="selGrade">الصف</label>
+  <select id="selGrade"></select>
+  <label for="selSubject">المادة</label>
+  <select id="selSubject" disabled></select>
+  <label for="loginName">الاسم</label>
+  <input id="loginName" type="text" maxlength="60" autocomplete="name" placeholder="اسمك (يُسجَّل مع كل تعديل)">
   <p id="loginMsg" role="alert"></p>
   <button class="btn p" id="loginGo" type="button">دخول</button>
   <button class="btn" id="loginGoogle" type="button" hidden>دخول المسؤول بحساب Google</button>

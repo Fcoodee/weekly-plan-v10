@@ -29,17 +29,17 @@ const gapsList=()=>allRows().filter(r=>r.status==='empty');
 const isAdmin=()=>!!(S.me&&S.me.type==='admin');
 
 /* ---------- الخدمة: Google Apps Script فوق Google Sheets ---------- */
-const TKEY='wp10_t',NKEY='wp10_name',POLL_MS=15000;
-let TOKEN='',IDTOKEN='',pollTimer=null;
+const NKEY='wp10_name',POLL_MS=15000;
+let TOKEN='',IDTOKEN='',ROLEKEY='',pollTimer=null;const RKEY='wp10_role';
 const timers={},inflight={},dirty={};
 function ss(){try{return window.sessionStorage}catch(e){return null}}
 function setStore(mode,txt){S.store=mode;const c=$('#chipStore');c.className='chip '+(mode==='db'?'ok':mode==='ro'||mode==='warn'?'warn':'');$('span',c).textContent=txt}
 function apiError(j){const e=new Error(j.error);e.api=true;return e}
 async function apiGet(){
-  const u=new URL(CFGW.API_URL);if(IDTOKEN)u.searchParams.set('idToken',IDTOKEN);else u.searchParams.set('t',TOKEN);
+  const u=new URL(CFGW.API_URL);if(IDTOKEN)u.searchParams.set('idToken',IDTOKEN);else if(TOKEN)u.searchParams.set('t',TOKEN);else u.searchParams.set('role',ROLEKEY);
   const r=await fetch(u.toString(),{redirect:'follow',cache:'no-store'});const j=await r.json();if(j.error)throw apiError(j);return j}
 async function apiPost(body){
-  const r=await fetch(CFGW.API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign(IDTOKEN?{idToken:IDTOKEN}:{token:TOKEN},body))});
+  const r=await fetch(CFGW.API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign(IDTOKEN?{idToken:IDTOKEN}:TOKEN?{token:TOKEN}:{role:ROLEKEY},body))});
   const j=await r.json();if(j.error)throw apiError(j);return j}
 function applyServer(j){
   let changed=!S.ready;
@@ -311,34 +311,49 @@ function renderEx(body){
   body.replaceChildren(el('div',{class:'row2',style:'margin-bottom:14px'},el('label',{for:'exg',text:'الصف'}),Object.assign(sg,{id:'exg'})),el('div',{style:'display:grid;gap:10px'},bW,bP),el('p',{class:'note',text:'Word يُبنى داخل قالبك المعتمد (الترويسة والتذييل كما هما). PDF: تفتح نافذة الطباعة، اختر «Save as PDF» والاتجاه أفقي (Landscape) وأوقف «Headers and footers».'}),(isAdmin()?el('div',{class:'row2',style:'margin-top:14px'},bC,bJ):null),msg);
 }
 
-/* ---------- boot + login ---------- */
-function showLogin(msg){
+/* ---------- boot + login (اختيار المرحلة ← الصف ← المادة) ---------- */
+let ROLES=[];
+async function apiRoles(){const u=new URL(CFGW.API_URL);u.searchParams.set('roles','1');const r=await fetch(u.toString(),{redirect:'follow',cache:'no-store'});const j=await r.json();if(j.error)throw apiError(j);return j.roles||[]}
+function opts(sel,items,ph){sel.replaceChildren(el('option',{value:'',text:ph}),...items.map(([v,t])=>el('option',{value:v,text:t})))}
+async function showLogin(msg){
   const L=$('#login');L.hidden=false;$('#loginMsg').textContent=msg||'';
-  const inp=$('#loginCode');inp.value='';setTimeout(()=>inp.focus(),50);
-  $('#loginGo').onclick=async()=>{const v=inp.value.replace(/\s+/g,'');if(!v){$('#loginMsg').textContent='أدخل رمز الدور';return}TOKEN=v;IDTOKEN='';await connect()};
-  inp.onkeydown=e=>{if(e.key==='Enter')$('#loginGo').click()};
+  const sg=$('#selGrade'),sj=$('#selSubject'),nm=$('#loginName'),go=$('#loginGo');
+  nm.value=S.name||'';
+  if(!ROLES.length){try{ROLES=await apiRoles()}catch(e){$('#loginMsg').textContent='تعذّر تحميل قائمة الأدوار. أعد المحاولة.';return}}
+  const grades=[...new Set(ROLES.map(r=>r.grade))].sort();
+  opts(sg,grades.map(g=>[g,'Grade '+g]),'اختر الصف');
+  const fillSubj=()=>{const ss=ROLES.filter(r=>r.grade===sg.value).map(r=>r.subject).sort((a,b)=>a.localeCompare(b));opts(sj,ss.map(x=>[x,x]),'اختر المادة');sj.disabled=!sg.value};
+  sg.onchange=fillSubj;fillSubj();
+  let last='';try{last=localStorage.getItem(RKEY)||''}catch(_){}
+  const k=last.lastIndexOf('@');if(k>0){sg.value=last.slice(k+1);fillSubj();sj.value=last.slice(0,k)}
+  go.onclick=async()=>{
+    const name=nm.value.trim();
+    if(!sg.value||!sj.value){$('#loginMsg').textContent='اختر الصف والمادة';return}
+    if(name.length<2){$('#loginMsg').textContent='أدخل اسمك (يُسجَّل مع كل تعديل)';return}
+    S.name=name;try{localStorage.setItem(NKEY,name);localStorage.setItem(RKEY,sj.value+'@'+sg.value)}catch(_){}
+    ROLEKEY=sj.value+'@'+sg.value;TOKEN='';IDTOKEN='';await connect()};
   const gb=$('#loginGoogle');
   if(CFGW.CLIENT_ID&&!gb.dataset.on){gb.hidden=false;gb.dataset.on='1';gb.onclick=()=>{
-    const go=()=>{google.accounts.id.initialize({client_id:CFGW.CLIENT_ID,callback:r=>{IDTOKEN=r.credential;TOKEN='';connect()}});google.accounts.id.prompt()};
-    if(window.google&&google.accounts)go();else{const sc=el('script',{src:'https://accounts.google.com/gsi/client',async:true});sc.onload=go;document.head.append(sc)}}}
+    const go2=()=>{google.accounts.id.initialize({client_id:CFGW.CLIENT_ID,callback:r=>{IDTOKEN=r.credential;TOKEN='';ROLEKEY='';connect()}});google.accounts.id.prompt()};
+    if(window.google&&google.accounts)go2();else{const sc=el('script',{src:'https://accounts.google.com/gsi/client',async:true});sc.onload=go2;document.head.append(sc)}}}
 }
 async function connect(){
   setStore('pending','جارٍ الاتصال…');
   try{const j=await apiGet();applyServer(j);
-    if(TOKEN){const st=ss();if(st)try{st.setItem(TKEY,TOKEN)}catch(_){}}
     $('#login').hidden=true;renderTabs();renderGrid();refreshAll();setStore('db','متصل بالشيت');startPoll()
-  }catch(e){if(e.api){const st=ss();if(st)try{st.removeItem(TKEY)}catch(_){}showLogin(e.message)}else{setStore('warn','تعذّر الاتصال بالخدمة');showLogin('تعذّر الاتصال. تحقق من الشبكة ثم أعد المحاولة.')}}
+  }catch(e){if(e.api){ROLEKEY='';showLogin(e.message)}else{setStore('warn','تعذّر الاتصال بالخدمة');showLogin('تعذّر الاتصال. تحقق من الشبكة ثم أعد المحاولة.')}}
 }
+function switchRole(){stopPoll();S.me=null;S.role=null;S.ready=false;ROLEKEY='';TOKEN='';IDTOKEN='';renderRole();renderGrid();showLogin('')}
 async function boot(){
   try{S.name=localStorage.getItem(NKEY)||''}catch(e){}
   try{LOGOS=await (await fetch('data/logos.json')).json()}catch(e){LOGOS={school:'',diploma:'',aiasc:''}}
   renderTop();renderRole();renderTabs();renderGrid();renderChips();renderDock();
-  if(!CFGW.API_URL){setStore('warn','لم يُضبط رابط الخدمة');showLogin('لم يُضبط API_URL في js/config.js');return}
-  const qs=new URLSearchParams(location.search),t=qs.get('t');
-  if(t){const st=ss();if(st)try{st.setItem(TKEY,t)}catch(_){}history.replaceState(null,'',location.pathname+location.hash)}
-  const st=ss();TOKEN=(t||(st&&st.getItem(TKEY))||'').replace(/\s+/g,'');
-  if(!TOKEN){showLogin();return}
-  await connect();
+  $('#chipRole').style.cursor='pointer';$('#chipRole').title='تغيير الدور';$('#chipRole').onclick=switchRole;
+  if(!CFGW.API_URL){setStore('warn','لم يُضبط رابط الخدمة');return}
+  const t=new URLSearchParams(location.search).get('t');
+  if(t){TOKEN=t.replace(/\s+/g,'');history.replaceState(null,'',location.pathname+location.hash);await connect();return}
+  let last='';try{last=localStorage.getItem(RKEY)||''}catch(_){}
+  if(last&&S.name){ROLEKEY=last;await connect()}else showLogin('');
   if(location.hash==='#gaps')openWin('gaps');
 }
 boot();
