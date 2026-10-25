@@ -1,25 +1,25 @@
 /* Layout concept: RTL workspace (grade tabs, day tabs, editable grid) with floating report windows over it and a dock of window launchers.
-   Identity: teal from the Dar Al-Forsan mark, blue and purple from the Diploma mark, interlaced-square lattice as the only ornament. */
+   Identity: blue and purple from the Diploma Department mark (Dar Al-Forsan mark stays the primary school logo), interlaced-square lattice as the only ornament. */
 :root{
   --f-display:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,system-ui,sans-serif;
   --f-body:"IBM Plex Sans Arabic",Tahoma,system-ui,sans-serif;
-  --bg:#F2F6F7; --surface:#FFFFFF; --surface-2:#E8F0F2; --ink:#10252B; --muted:#52666C; --line:#CFDDE0;
-  --teal:#00788A; --teal-ink:#005766; --blue:#1B64B3; --purple:#6B2A9A;
+  --bg:#F3F5FA; --surface:#FFFFFF; --surface-2:#E9EDF6; --ink:#131B2E; --muted:#566178; --line:#D2D9E8;
+  --teal:#1060B0; --teal-ink:#0A427F; --blue:#1B6FC8; --purple:#6A2399;
   --warn-bg:#FFF3D4; --warn-line:#D9A21B; --warn-ink:#6B4B00; --ok:#0B7A5A;
   --shadow:0 12px 32px rgba(8,40,48,.20);
   --paper:#FFFFFF; --paper-ink:#0B2A33; --paper-teal:#07BCCF; --paper-band:#EAF8FA; --paper-day:#BFEFF5; --paper-gap:#E6E6E6; --paper-sub:#1B5E68;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0C171A; --surface:#132226; --surface-2:#1A2E33; --ink:#E5F0F2; --muted:#98ADB2; --line:#2B4147;
-    --teal:#3CB7CA; --teal-ink:#7FD6E4; --blue:#78AEF0; --purple:#BE93E6;
+    --bg:#0E1320; --surface:#161D2E; --surface-2:#1E2740; --ink:#E8ECF6; --muted:#A0A9BF; --line:#2E3956;
+    --teal:#6AA6F0; --teal-ink:#A9CBF8; --blue:#7DB3F5; --purple:#C29AEA;
     --warn-bg:#33290F; --warn-line:#C99A2E; --warn-ink:#F2D58A; --ok:#4CC9A3; --shadow:0 12px 32px rgba(0,0,0,.5);
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0C171A; --surface:#132226; --surface-2:#1A2E33; --ink:#E5F0F2; --muted:#98ADB2; --line:#2B4147;
-  --teal:#3CB7CA; --teal-ink:#7FD6E4; --blue:#78AEF0; --purple:#BE93E6;
+  --bg:#0E1320; --surface:#161D2E; --surface-2:#1E2740; --ink:#E8ECF6; --muted:#A0A9BF; --line:#2E3956;
+  --teal:#6AA6F0; --teal-ink:#A9CBF8; --blue:#7DB3F5; --purple:#C29AEA;
   --warn-bg:#33290F; --warn-line:#C99A2E; --warn-ink:#F2D58A; --ok:#4CC9A3; --shadow:0 12px 32px rgba(0,0,0,.5);
   color-scheme:dark;
 }
@@ -34,12 +34,12 @@ button{cursor:pointer}
 /* top bar */
 .top{position:relative;margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:18px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:var(--surface);border-bottom:1px solid var(--line);overflow:hidden}
 .top::before{content:"";position:absolute;inset:0;opacity:.16;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='none' stroke-width='2'%3E%3Crect x='14' y='14' width='36' height='36' stroke='%231B64B3'/%3E%3Crect x='14' y='14' width='36' height='36' stroke='%236B2A9A' transform='rotate(45 32 32)'/%3E%3Ccircle cx='32' cy='32' r='5' stroke='%2300788A'/%3E%3C/g%3E%3C/svg%3E");
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='none' stroke-width='2'%3E%3Crect x='14' y='14' width='36' height='36' stroke='%231B64B3'/%3E%3Crect x='14' y='14' width='36' height='36' stroke='%236B2A9A' transform='rotate(45 32 32)'/%3E%3Ccircle cx='32' cy='32' r='5' stroke='%231060B0'/%3E%3C/g%3E%3C/svg%3E");
   -webkit-mask-image:linear-gradient(to left,#000 0,transparent 70%);mask-image:linear-gradient(to left,#000 0,transparent 70%)}
-.top::after{content:"";position:absolute;inset:auto 0 0 0;height:4px;background:linear-gradient(to left,var(--teal) 0 34%,var(--blue) 34% 67%,var(--purple) 67%)}
+.top::after{content:"";position:absolute;inset:auto 0 0 0;height:4px;background:linear-gradient(to left,var(--teal) 0 50%,var(--purple) 50%)}
 .top .wrap{position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.mark{width:56px;height:56px;border-radius:50%;background:#fff;display:grid;place-items:center;border:1px solid var(--line);flex:none}
-.mark img{width:42px;height:auto}
+.mark{display:flex;gap:8px;flex:none;align-items:center}
+.mark img{width:56px;height:56px;object-fit:contain;background:#fff;border-radius:50%;border:1px solid var(--line);padding:6px}
 .ttl{min-width:0;flex:1 1 260px}
 .ttl h1{font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.25;margin:0;text-wrap:balance}
 .ttl p{margin:2px 0 0;color:var(--muted);font-size:14px}
@@ -100,7 +100,7 @@ button{cursor:pointer}
 .win{position:absolute;pointer-events:auto;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;resize:both;min-width:300px;min-height:140px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px)}
 .win.col{resize:none;min-height:0;height:auto!important}
 .wt{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 8px;background:var(--surface-2);border-bottom:1px solid var(--line);cursor:grab;touch-action:none;user-select:none;position:relative}
-.wt::after{content:"";position:absolute;inset:auto 0 0 0;height:3px;background:linear-gradient(to left,var(--teal) 0 34%,var(--blue) 34% 67%,var(--purple) 67%)}
+.wt::after{content:"";position:absolute;inset:auto 0 0 0;height:3px;background:linear-gradient(to left,var(--teal) 0 50%,var(--purple) 50%)}
 .wt h3{font-family:var(--f-display);font-size:14px;margin:0;flex:1}
 .wt button{width:30px;height:30px;border-radius:8px;border:1px solid transparent;background:transparent;display:grid;place-items:center}
 .wt button:hover{background:var(--surface);border-color:var(--line)}

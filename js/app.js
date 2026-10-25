@@ -81,8 +81,8 @@ function roleCells(r){let n=0;for(let d=0;d<5;d++)for(const s of SESS)if(subj(r.
 
 /* ---------- main workspace ---------- */
 function renderTop(){
-  $('#logoSchool').src='data:image/png;base64,'+LOGOS.school;
-  $('#sub').textContent=`المرحلة الابتدائية · الأسبوع ${WEEK} · ${DAYS[0].date} إلى ${DAYS[4].date}`;
+  $('#logoSchool').src='data:image/png;base64,'+LOGOS.school;$('#logoDiploma').src='data:image/png;base64,'+LOGOS.diploma;
+  $('#sub').textContent=`قسم الدبلوما · المرحلة الابتدائية · الأسبوع ${WEEK} · ${DAYS[0].date} إلى ${DAYS[4].date}`;
 }
 function renderTabs(){
   const g=$('#grades');g.replaceChildren(...GKEYS.map(k=>{const f=gradeCount(k);return el('button',{class:'gbtn',role:'tab','aria-selected':String(k===S.grade),onclick:()=>{S.grade=k;S.pv.g=k;S.exp.g=k;renderTabs();renderGrid();refreshAll()}},el('b',{text:GR[k].ar}),el('small',{text:`Grade ${k} · ${f} من 40 حصة مكتملة`}),el('div',{class:'bar'},el('span',{style:`width:${f/40*100}%`})))}));
