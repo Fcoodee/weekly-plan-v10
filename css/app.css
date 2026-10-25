@@ -204,3 +204,10 @@ table.dt tr{cursor:pointer} table.dt tr:hover td{background:var(--surface-2)}
 }
 #login select,#login input[type=text],#adminLogin input{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:inherit;width:100%;min-width:0;font:inherit;direction:rtl;text-align:start}
 [hidden]{display:none!important}
+#loading{position:fixed;inset:0;z-index:95;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 92%,transparent);padding:16px}
+#loading[hidden]{display:none}
+#loading .card{width:min(360px,100%);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px;display:grid;gap:12px;text-align:center}
+#loading p{margin:0;font-family:var(--f-display);font-size:15px}
+#loading .bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+#loading .bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(to left,var(--teal),var(--purple));transition:width .25s ease-out}
+@media (prefers-reduced-motion:reduce){#loading .bar i{transition:none}}

@@ -313,7 +313,14 @@ function renderEx(body){
   body.replaceChildren(el('div',{class:'row2',style:'margin-bottom:14px'},el('label',{for:'exg',text:'الصف'}),Object.assign(sg,{id:'exg'})),el('div',{style:'display:grid;gap:10px'},bW,bP),el('p',{class:'note',text:'Word يُبنى داخل قالبك المعتمد (الترويسة والتذييل كما هما). PDF: تفتح نافذة الطباعة، اختر «Save as PDF» والاتجاه أفقي (Landscape) وأوقف «Headers and footers».'}),(isAdmin()?el('div',{class:'row2',style:'margin-top:14px'},bC,bJ):null),msg);
 }
 
-/* ---------- مدير النظام: رمز يتحقق منه الخادم ---------- */
+/* ---------- شاشة الاتصال بقاعدة البيانات (شريط تقدم) ---------- */
+let ldTimer=null,ldPct=0,ldDepth=0;
+function ldBar(){const b=$('#ldBar');if(b)b.style.width=Math.round(ldPct)+'%';const pr=$('#ldProg');if(pr)pr.setAttribute('aria-valuenow',String(Math.round(ldPct)))}
+function showLoading(msg){ldDepth++;const L=$('#loading');L.hidden=false;if(msg)$('#ldMsg').textContent=msg;
+  if(ldDepth===1){ldPct=6;ldBar();clearInterval(ldTimer);ldTimer=setInterval(()=>{ldPct+=(92-ldPct)*0.07;ldBar()},120)}}
+function hideLoading(){ldDepth=Math.max(0,ldDepth-1);if(ldDepth)return;clearInterval(ldTimer);ldPct=100;ldBar();setTimeout(()=>{if(!ldDepth)$('#loading').hidden=true},280)}
+
+/* ---------- مدير النظام ---------- */
 let admPending=null;
 function requireAdmin(then){if(isAdmin()){then();return}admPending=then;const m=$('#adminLogin');m.hidden=false;$('#admMsg').textContent='';const i=$('#admCode');i.value='';setTimeout(()=>i.focus(),50)}
 function closeAdmin(){$('#adminLogin').hidden=true;admPending=null}
@@ -330,7 +337,7 @@ async function adminLogin(){
   finally{$('#admGo').disabled=false}
 }
 async function connectAdminView(){
-  if(!ROLES.length){try{ROLES=await apiRoles()}catch(e){toast('تعذّر تحميل قائمة الأدوار');return}}
+  if(!ROLES.length){showLoading('جارٍ تحميل قائمة الأدوار…');try{ROLES=await apiRoles()}catch(e){toast('تعذّر تحميل قائمة الأدوار');return}finally{hideLoading()}}
   if(!ROLES.length)return;
   S.adminView=true;ROLEKEY=ROLES[0].key;TOKEN='';IDTOKEN='';await connect();renderRole()
 }
@@ -339,10 +346,11 @@ let ROLES=[];
 async function apiRoles(){const u=new URL(CFGW.API_URL);u.searchParams.set('roles','1');const r=await fetch(u.toString(),{redirect:'follow',cache:'no-store'});const j=await r.json();if(j.error)throw apiError(j);return j.roles||[]}
 function opts(sel,items,ph){sel.replaceChildren(el('option',{value:'',text:ph}),...items.map(([v,t])=>el('option',{value:v,text:t})))}
 async function showLogin(msg){
-  const L=$('#login');L.hidden=false;$('#loginMsg').textContent=msg||'';
+  const L=$('#login');$('#loginMsg').textContent=msg||'';
   const sg=$('#selGrade'),sj=$('#selSubject'),nm=$('#loginName'),go=$('#loginGo');
   nm.value=S.name||'';
-  if(!ROLES.length){try{ROLES=await apiRoles()}catch(e){$('#loginMsg').textContent='تعذّر تحميل قائمة الأدوار. أعد المحاولة.';return}}
+  if(!ROLES.length){showLoading('جارٍ تحميل قائمة الأدوار…');try{ROLES=await apiRoles()}catch(e){$('#loginMsg').textContent='تعذّر تحميل قائمة الأدوار. أعد المحاولة.';return}finally{hideLoading()}}
+  L.hidden=false;
   const grades=[...new Set(ROLES.map(r=>r.grade))].sort();
   opts(sg,grades.map(g=>[g,'Grade '+g]),'اختر الصف');
   const fillSubj=()=>{const ss=ROLES.filter(r=>r.grade===sg.value).map(r=>r.subject).sort((a,b)=>a.localeCompare(b));opts(sj,ss.map(x=>[x,x]),'اختر المادة');sj.disabled=!sg.value};
@@ -362,13 +370,14 @@ async function showLogin(msg){
     if(window.google&&google.accounts)go2();else{const sc=el('script',{src:'https://accounts.google.com/gsi/client',async:true});sc.onload=go2;document.head.append(sc)}}}
 }
 async function connect(){
-  setStore('pending','جارٍ الاتصال…');
+  setStore('pending','جارٍ الاتصال…');showLoading('جارٍ الاتصال بقاعدة البيانات…');
   try{const j=await apiGet();applyServer(j);
     $('#login').hidden=true;renderTabs();renderGrid();refreshAll();setStore('db','متصل بقاعدة البيانات');startPoll()
   }catch(e){if(e.api){ROLEKEY='';showLogin(e.message)}else{setStore('warn','تعذّر الاتصال بالخدمة');showLogin('تعذّر الاتصال. تحقق من الشبكة ثم أعد المحاولة.')}}
+  finally{hideLoading()}
 }
 function switchRole(){stopPoll();S.uiAdmin=false;S.adminView=false;{const st=ss();if(st)try{st.removeItem(AKEY)}catch(_){}}S.me=null;S.role=null;S.ready=false;ROLEKEY='';TOKEN='';IDTOKEN='';renderRole();renderGrid();showLogin('')}
-async function boot(){
+async function boot0(){
   try{S.name=localStorage.getItem(NKEY)||''}catch(e){}
   try{LOGOS=await (await fetch('data/logos.json')).json()}catch(e){LOGOS={school:'',diploma:'',aiasc:''}}
   renderTop();renderRole();renderTabs();renderGrid();renderChips();renderDock();
@@ -379,8 +388,9 @@ async function boot(){
   const t=new URLSearchParams(location.search).get('t');
   if(t){TOKEN=t.replace(/\s+/g,'');history.replaceState(null,'',location.pathname+location.hash);await connect();return}
   let last='';try{last=localStorage.getItem(RKEY)||''}catch(_){}
-  if(last&&S.name){ROLEKEY=last;await connect()}else if(S.uiAdmin){await connectAdminView()}else showLogin('');
+  if(last&&S.name){ROLEKEY=last;await connect()}else if(S.uiAdmin){await connectAdminView()}else await showLogin('');
   if(location.hash==='#gaps')requireAdmin(()=>openWin('gaps'));
 }
+async function boot(){showLoading('جارٍ تحميل الصفحة…');try{await boot0()}finally{hideLoading()}}
 boot();
 })();

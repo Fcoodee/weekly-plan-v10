@@ -28,6 +28,11 @@
 <nav class="dock" aria-label="النوافذ"><div id="dock"></div></nav>
 <div id="toast" aria-live="polite"><span></span></div>
 
+<div id="loading" role="status" aria-live="polite"><div class="card">
+  <p id="ldMsg">جارٍ تحميل الصفحة…</p>
+  <div class="bar" id="ldProg" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="ldBar"></i></div>
+</div></div>
+
 <div id="login" hidden role="dialog" aria-modal="true" aria-labelledby="loginT"><div class="card">
   <h2 id="loginT">الدخول إلى الخطة الأسبوعية</h2>
   <label for="selStage">المرحلة</label>
