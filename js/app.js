@@ -78,7 +78,7 @@ addEventListener('beforeunload',e=>{if(Object.keys(timers).length||Object.keys(i
 /* ---------- الأدوار: الصلاحية الفعلية يفرضها الخادم؛ الواجهة تعكسها فقط ---------- */
 const roleKey=r=>r.s+'@'+r.g;
 function canEditCell(g,sub){if(!S.canWrite||S.adminView)return false;return !S.role||(S.role.g===g&&S.role.s===sub)}
-function renderRole(){const c=$('#chipRole');c.className='chip '+(S.me?'ok':'');$('span',c).textContent=!S.me?'غير متصل':S.role?`دور: ${roleKey(S.role)}`+(S.uiAdmin?' · مدير النظام':''):(S.adminView?'مدير النظام (عرض)':'دور: مسؤول (الكل)')+(S.locked?' · الأسبوع مقفل':'')}
+function renderRole(){document.body.classList.toggle('is-admin',isAdmin());const c=$('#chipRole');c.className='chip '+(S.me?'ok':'');$('span',c).textContent=!S.me?'غير متصل':S.role?`دور: ${roleKey(S.role)}`+(S.uiAdmin?' · مدير النظام':''):(S.adminView?'مدير النظام (عرض)':'دور: مسؤول (الكل)')+(S.locked?' · الأسبوع مقفل':'')}
 function roleCells(r){let n=0;for(let d=0;d<5;d++)for(const s of SESS)if(subj(r.g,d,s.n)===r.s)n++;return n}
 
 /* ---------- main workspace ---------- */
@@ -311,6 +311,16 @@ function renderEx(body){
   bC.onclick=()=>saveFile(`weekly-plan-week${WEEK}.csv`,new Blob([toCsv()],{type:'text/csv'}));
   bJ.onclick=()=>saveFile(`weekly-plan-week${WEEK}.json`,new Blob([JSON.stringify(allRows(),null,1)],{type:'application/json'}));
   body.replaceChildren(el('div',{class:'row2',style:'margin-bottom:14px'},el('label',{for:'exg',text:'الصف'}),Object.assign(sg,{id:'exg'})),el('div',{style:'display:grid;gap:10px'},bW,bP),el('p',{class:'note',text:'Word يُبنى داخل قالبك المعتمد (الترويسة والتذييل كما هما). PDF: تفتح نافذة الطباعة، اختر «Save as PDF» والاتجاه أفقي (Landscape) وأوقف «Headers and footers».'}),(isAdmin()?el('div',{class:'row2',style:'margin-top:14px'},bC,bJ):null),msg);
+}
+
+/* ---------- تقييد المحتوى (رادع لا حماية مطلقة): لا تحديد ولا نسخ ولا سحب إلا لمدير النظام ---------- */
+{
+  const tgt=e=>{const t=e.target;return t&&t.nodeType===3?t.parentElement:t};
+  const editable=t=>!!(t&&t.closest&&t.closest('textarea:not([readonly]),input[type=text],input[type=password]'));
+  const block=ev=>document.addEventListener(ev,e=>{if(isAdmin())return;if(ev!=='dragstart'&&editable(tgt(e)))return;e.preventDefault()},true);
+  ['copy','cut','dragstart','contextmenu','selectstart'].forEach(block);
+  document.addEventListener('selectionchange',()=>{if(isAdmin())return;const s=getSelection();if(!s||s.isCollapsed)return;const n=s.anchorNode,el0=n&&(n.nodeType===3?n.parentElement:n);if(!editable(el0))s.removeAllRanges()});
+  document.addEventListener('keydown',e=>{if(isAdmin())return;if((e.ctrlKey||e.metaKey)&&/^[acpsx]$/i.test(e.key)&&!editable(e.target))e.preventDefault()},true);
 }
 
 /* ---------- شاشة الاتصال بقاعدة البيانات (شريط تقدم) ---------- */

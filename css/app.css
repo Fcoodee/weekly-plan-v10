@@ -26,7 +26,8 @@
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 110px}
-button,select,input,textarea{font:inherit;color:inherit}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+button,select,input,textarea{font:inherit;color:inherit;touch-action:manipulation}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .wrap{max-width:1180px;margin-inline:auto}
@@ -180,14 +181,33 @@ table.dt tr{cursor:pointer} table.dt tr:hover td{background:var(--surface-2)}
   .win.col{height:auto!important}
   .dk{min-width:64px;padding:7px 8px}
   .ttl h1{font-size:20px}
+  .top .wrap{gap:10px}
+  .mark img{width:44px;height:44px;padding:4px}
+  .ttl{flex:1 1 150px}
+  .ttl p{font-size:12.5px}
+  .chips{width:100%}
+  .grades{gap:6px}
+  .gbtn{padding:8px 10px;gap:4px}
+  .gbtn b{font-size:14px} .gbtn small{font-size:12px}
+  .win{height:68vh!important;height:68dvh!important}
+  .dock{padding-inline:max(8px,env(safe-area-inset-left,0px)) max(8px,env(safe-area-inset-right,0px))}
+  .dock div{width:100%;gap:2px;padding:4px}
+  .dk{flex:1 1 0;min-width:0;padding:6px 2px;font-size:11px;text-align:center}
+}
+@media (max-width:380px){.ttl h1{font-size:18px}.chip{font-size:12px}}
+@media (max-height:480px) and (orientation:landscape){.win{height:86vh!important;height:86dvh!important}body{padding-block-end:84px}}
+@media (pointer:coarse){
+  textarea,input,select{font-size:16px}
+  .btn,.dk,.gbtn,.dbtn,#chipRole{min-height:44px}
+  .gr textarea{min-height:48px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 /* login */
-#login,#adminLogin{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 88%,transparent);padding:16px}
+#login,#adminLogin{position:fixed;inset:0;z-index:80;display:flex;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:color-mix(in srgb,var(--bg) 88%,transparent);padding:16px}
 #adminLogin{z-index:90}
 #login[hidden],#adminLogin[hidden]{display:none}
-#login .card,#adminLogin .card{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:22px;display:grid;gap:12px}
+#login .card,#adminLogin .card{margin:auto;width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:22px;display:grid;gap:12px}
 #login h2,#adminLogin h2{font-family:var(--f-display);margin:0;font-size:20px}
 #login input,#adminLogin input{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);width:100%;min-width:0;direction:ltr;text-align:start}
 #loginMsg,#admMsg{color:var(--warn-ink);background:var(--warn-bg);border-radius:8px;padding:0;margin:0;min-height:0}
@@ -211,3 +231,13 @@ table.dt tr{cursor:pointer} table.dt tr:hover td{background:var(--surface-2)}
 #loading .bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
 #loading .bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(to left,var(--teal),var(--purple));transition:width .25s ease-out}
 @media (prefers-reduced-motion:reduce){#loading .bar i{transition:none}}
+
+/* تقييد المحتوى: لا تحديد ولا نسخ إلا لمدير النظام (حقول الكتابة المفتوحة للمحرّر مستثناة) */
+body:not(.is-admin){-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body:not(.is-admin) img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
+body:not(.is-admin) textarea:not([readonly]),body:not(.is-admin) input[type=text],body:not(.is-admin) input[type=password]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+body:not(.is-admin) textarea[readonly]{-webkit-user-select:none;user-select:none}
+@media print{
+  body:not(.is-admin)>*{display:none!important}
+  body:not(.is-admin)::before{content:"الطباعة متاحة لمدير النظام فقط";display:block;padding:24px;font:16px sans-serif}
+}
