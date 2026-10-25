@@ -384,11 +384,11 @@ async function boot0(){
   $('#admGo').onclick=adminLogin;$('#admCancel').onclick=closeAdmin;$('#admCode').onkeydown=e=>{if(e.key==='Enter')adminLogin();if(e.key==='Escape')closeAdmin()};
   $('#chipRole').style.cursor='pointer';$('#chipRole').title='تغيير الدور';$('#chipRole').onclick=switchRole;
   if(!CFGW.API_URL){setStore('warn','لم يُضبط رابط الخدمة');return}
-  {const st=ss();if(st&&st.getItem(AKEY)==='1')S.uiAdmin=true}
+  {const st=ss();if(st)try{st.removeItem(AKEY)}catch(_){}}
   const t=new URLSearchParams(location.search).get('t');
   if(t){TOKEN=t.replace(/\s+/g,'');history.replaceState(null,'',location.pathname+location.hash);await connect();return}
   let last='';try{last=localStorage.getItem(RKEY)||''}catch(_){}
-  if(last&&S.name){ROLEKEY=last;await connect()}else if(S.uiAdmin){await connectAdminView()}else await showLogin('');
+  await showLogin('');
   if(location.hash==='#gaps')requireAdmin(()=>openWin('gaps'));
 }
 async function boot(){showLoading('جارٍ تحميل الصفحة…');try{await boot0()}finally{hideLoading()}}
