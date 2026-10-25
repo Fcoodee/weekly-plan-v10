@@ -34,7 +34,7 @@ button{cursor:pointer}
 /* top bar */
 .top{position:relative;margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:18px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:var(--surface);border-bottom:1px solid var(--line);overflow:hidden}
 .top::before{content:"";position:absolute;inset:0;opacity:.16;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='none' stroke-width='2'%3E%3Crect x='14' y='14' width='36' height='36' stroke='%231B64B3'/%3E%3Crect x='14' y='14' width='36' height='36' stroke='%236B2A9A' transform='rotate(45 32 32)'/%3E%3Ccircle cx='32' cy='32' r='5' stroke='%231060B0'/%3E%3C/g%3E%3C/svg%3E");
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='88'%3E%3Cg fill='none' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpolygon points='44,6 58,44 44,82 30,44' stroke='%231060B0'/%3E%3Cpolygon points='6,44 44,30 82,44 44,58' stroke='%231060B0'/%3E%3Cpolygon points='17,17 52,36 71,71 36,52' stroke='%236A2399'/%3E%3Cpolygon points='71,17 52,52 17,71 36,36' stroke='%236A2399'/%3E%3C/g%3E%3C/svg%3E");
   -webkit-mask-image:linear-gradient(to left,#000 0,transparent 70%);mask-image:linear-gradient(to left,#000 0,transparent 70%)}
 .top::after{content:"";position:absolute;inset:auto 0 0 0;height:4px;background:linear-gradient(to left,var(--teal) 0 50%,var(--purple) 50%)}
 .top .wrap{position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -184,13 +184,14 @@ table.dt tr{cursor:pointer} table.dt tr:hover td{background:var(--surface-2)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 /* login */
-#login{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 88%,transparent);padding:16px}
-#login[hidden]{display:none}
-#login .card{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:22px;display:grid;gap:12px}
-#login h2{font-family:var(--f-display);margin:0;font-size:20px}
-#login input{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);width:100%;min-width:0;direction:ltr;text-align:start}
-#loginMsg{color:var(--warn-ink);background:var(--warn-bg);border-radius:8px;padding:0;margin:0;min-height:0}
-#loginMsg:not(:empty){padding:8px 10px}
+#login,#adminLogin{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 88%,transparent);padding:16px}
+#adminLogin{z-index:90}
+#login[hidden],#adminLogin[hidden]{display:none}
+#login .card,#adminLogin .card{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:22px;display:grid;gap:12px}
+#login h2,#adminLogin h2{font-family:var(--f-display);margin:0;font-size:20px}
+#login input,#adminLogin input{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);width:100%;min-width:0;direction:ltr;text-align:start}
+#loginMsg,#admMsg{color:var(--warn-ink);background:var(--warn-bg);border-radius:8px;padding:0;margin:0;min-height:0}
+#loginMsg:not(:empty),#admMsg:not(:empty){padding:8px 10px}
 /* print (PDF) */
 #printRoot{display:none}
 @media print{
@@ -201,4 +202,5 @@ table.dt tr{cursor:pointer} table.dt tr:hover td{background:var(--surface-2)}
   #printRoot .pg{break-after:page;page-break-after:always;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #printRoot .pg:last-child{break-after:auto;page-break-after:auto}
 }
-#login select,#login input[type=text]{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:inherit;width:100%;min-width:0;font:inherit;direction:rtl;text-align:start}
+#login select,#login input[type=text],#adminLogin input{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:inherit;width:100%;min-width:0;font:inherit;direction:rtl;text-align:start}
+[hidden]{display:none!important}

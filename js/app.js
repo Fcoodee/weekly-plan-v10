@@ -30,16 +30,16 @@ const isAdmin=()=>!!(S.me&&S.me.type==='admin');
 
 /* ---------- الخدمة: Google Apps Script فوق Google Sheets ---------- */
 const NKEY='wp10_name',POLL_MS=15000;
-let TOKEN='',IDTOKEN='',ROLEKEY='',pollTimer=null;const RKEY='wp10_role';
+let TOKEN='',IDTOKEN='',ROLEKEY='',ADMINCODE='',pollTimer=null;const RKEY='wp10_role',AKEY='wp10_admin';
 const timers={},inflight={},dirty={};
 function ss(){try{return window.sessionStorage}catch(e){return null}}
 function setStore(mode,txt){S.store=mode;const c=$('#chipStore');c.className='chip '+(mode==='db'?'ok':mode==='ro'||mode==='warn'?'warn':'');$('span',c).textContent=txt}
 function apiError(j){const e=new Error(j.error);e.api=true;return e}
 async function apiGet(){
-  const u=new URL(CFGW.API_URL);if(IDTOKEN)u.searchParams.set('idToken',IDTOKEN);else if(TOKEN)u.searchParams.set('t',TOKEN);else u.searchParams.set('role',ROLEKEY);
+  const u=new URL(CFGW.API_URL);if(ADMINCODE)u.searchParams.set('adminCode',ADMINCODE);else if(IDTOKEN)u.searchParams.set('idToken',IDTOKEN);else if(TOKEN)u.searchParams.set('t',TOKEN);else u.searchParams.set('role',ROLEKEY);
   const r=await fetch(u.toString(),{redirect:'follow',cache:'no-store'});const j=await r.json();if(j.error)throw apiError(j);return j}
 async function apiPost(body){
-  const r=await fetch(CFGW.API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign(IDTOKEN?{idToken:IDTOKEN}:TOKEN?{token:TOKEN}:{role:ROLEKEY},body))});
+  const r=await fetch(CFGW.API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign(ADMINCODE?{adminCode:ADMINCODE}:IDTOKEN?{idToken:IDTOKEN}:TOKEN?{token:TOKEN}:{role:ROLEKEY},body))});
   const j=await r.json();if(j.error)throw apiError(j);return j}
 function applyServer(j){
   let changed=!S.ready;
@@ -58,7 +58,7 @@ async function flush(g,d,p){
   const k=cellKey(g,d,p),row=DATA[g].rows[`${d}-${p}`];if(!row)return;
   if(inflight[k]){dirty[k]=true;return}
   inflight[k]=true;
-  try{const r=await apiPost({key:k,lesson:row.lesson||'',note:row.note||'',name:S.name});row.at=r.at;row.by=r.by;setStore('db','تم الحفظ في الشيت')}
+  try{const r=await apiPost({key:k,lesson:row.lesson||'',note:row.note||'',name:S.name});row.at=r.at;row.by=r.by;setStore('db','تم الحفظ في قاعدة البيانات')}
   catch(e){if(e.api){setStore('ro','لم يُحفظ: '+e.message);toast(e.message);if(/مقفل/.test(e.message)){S.canWrite=false;renderGrid()}}else{setStore('warn','تعذّر الاتصال · سنعيد المحاولة');setTimeout(()=>flush(g,d,p),8000)}}
   finally{inflight[k]=false;if(dirty[k]){dirty[k]=false;flush(g,d,p)}}
 }
@@ -66,7 +66,7 @@ async function poll(){
   if(document.hidden||Object.keys(timers).length||Object.keys(inflight).some(k=>inflight[k]))return;
   try{const j=await apiGet();const ch=applyServer(j);const ae=document.activeElement;
     if(ch){renderTabs();if(!ae||ae.tagName!=='TEXTAREA')renderGrid();refreshAll()}
-    if(S.store!=='ro')setStore('db','متصل · '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))
+    if(S.store!=='ro')setStore('db','متصل بقاعدة البيانات · '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))
   }catch(e){if(e.api){stopPoll();showLogin(e.message)}else setStore('warn','انقطع الاتصال · محاولة لاحقة')}
 }
 function startPoll(){stopPoll();pollTimer=setInterval(poll,POLL_MS)}
@@ -94,7 +94,7 @@ function renderGrid(){
   $('#dayTitle').textContent=`${D.ar} · ${D.en}`;
   $('#dayMeta').textContent=`${D.date} · ${GR[g].label} · ${dayCount(g,d)} من 8 حصص مكتملة`;
   const grid=$('#grid');grid.replaceChildren();
-  if(!S.ready){grid.append(el('p',{class:'note',style:'padding:16px',text:'جارٍ تحميل الخطة من الشيت…'}));return}
+  if(!S.ready){grid.append(el('p',{class:'note',style:'padding:16px',text:'جارٍ تحميل الخطة من قاعدة البيانات…'}));return}
   grid.append(el('div',{class:'gr h',role:'row'},...[['الفترة الزمنية','Time Period'],['المادة','Subject'],['الصف','Grade'],['عنوان الدرس','Lesson Title'],['ملاحظات','Notes']].map(h=>el('div',{role:'columnheader'},h[0],el('small',{text:h[1]})))));
   for(const s of SEQ){
     if(s.gap){grid.append(el('div',{class:'gr gap'},el('div',{class:'per'},el('b',{text:s.gap}),el('small',{text:`${s.a} - ${s.b}`}))));continue}
@@ -253,10 +253,10 @@ function openWin(id){
 function closeWin(id){const w=WINS[id];if(!w)return;w.root.remove();delete WINS[id];renderDock()}
 function focusWin(id){const w=WINS[id];if(w)w.root.style.zIndex=++zTop}
 function refreshAll(light){renderChips();renderRole();renderDock();for(const id in WINS){if(light&&id==='pv')continue;WINS[id].def.render(WINS[id].body)}}
-function renderChips(){const n=gapsList().length;$('span',$('#chipGaps')).textContent=n?`${n} حصة بلا موضوع درس`:'كل الحصص مكتملة';$('#chipGaps').className='chip '+(n?'warn':'ok')}
+function renderChips(){const n=gapsList().length;$('#chipGaps').hidden=!isAdmin();$('span',$('#chipGaps')).textContent=n?`${n} حصة بلا موضوع درس`:'كل الحصص مكتملة';$('#chipGaps').className='chip '+(n?'warn':'ok')}
 function renderDock(){
   const n=gapsList().length,d=$('#dock');
-  d.replaceChildren(...Object.keys(DEF).map(id=>{const b=el('button',{class:'dk','aria-pressed':String(!!WINS[id]),onclick:()=>WINS[id]?closeWin(id):openWin(id)});b.innerHTML=ICON[id]+'<span></span>';$('span',b).textContent=DEF[id].title;if(id==='gaps'&&n)b.append(el('span',{class:'bd',text:String(n)}));return b}));
+  d.replaceChildren(...Object.keys(DEF).map(id=>{const b=el('button',{class:'dk','aria-pressed':String(!!WINS[id]),onclick:()=>requireAdmin(()=>WINS[id]?closeWin(id):openWin(id))});b.innerHTML=ICON[id]+'<span></span>';$('span',b).textContent=DEF[id].title;if(id==='gaps'&&n&&isAdmin())b.append(el('span',{class:'bd',text:String(n)}));return b}));
 }
 
 function renderGaps(body){
@@ -276,7 +276,7 @@ function renderGaps(body){
 const SHEET_URL=CFGW.SHEET_URL||'';
 function renderData(body){
   const g=S.dataF.g||S.grade,keep=body.scrollTop;
-  const tabs=el('div',{class:'row2',role:'tablist','aria-label':'تبويبات الشيت',style:'margin-bottom:10px;gap:4px'},...GKEYS.map(k=>el('button',{class:'btn',role:'tab','aria-selected':String(k===g),style:k===g?'border-color:var(--teal);box-shadow:inset 0 -3px 0 var(--teal);font-weight:600':'',onclick:()=>{S.dataF.g=k;renderData(body)}},'Grade'+k)),el('span',{class:'chip '+(S.store==='db'?'ok':'warn')},el('i'),S.store==='db'?'متصل بالشيت':'غير متصل'));
+  const tabs=el('div',{class:'row2',role:'tablist','aria-label':'تبويبات الشيت',style:'margin-bottom:10px;gap:4px'},...GKEYS.map(k=>el('button',{class:'btn',role:'tab','aria-selected':String(k===g),style:k===g?'border-color:var(--teal);box-shadow:inset 0 -3px 0 var(--teal);font-weight:600':'',onclick:()=>{S.dataF.g=k;renderData(body)}},'Grade'+k)),el('span',{class:'chip '+(S.store==='db'?'ok':'warn')},el('i'),S.store==='db'?'متصل بقاعدة البيانات':'غير متصل'));
   const H=['key','اليوم Day','الفترة Period','الوقت Time','المادة Subject','الصف Grade','عنوان الدرس Lesson Title','ملاحظات Notes','status','updated_by','updated_at'];
   const rows=[];for(let d=0;d<5;d++)for(const s of SESS){const c=cell(g,d,s.n),o=DATA[g].rows[`${d}-${s.n}`],ok=c.lesson.trim();rows.push([`${g}_${d}_${s.n}`,`${DAYS[d].ar} ${DAYS[d].en}`,s.name,`${s.a} - ${s.b}`,subj(g,d,s.n),'Grade '+g,c.lesson,c.note,ok?'filled':'empty',o&&o.by||'—',o&&o.at?new Date(o.at).toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'}):'—',d,s.n])}
   const t=el('table',{class:'dt'},el('thead',{},el('tr',{},...H.map(h=>el('th',{text:h})))),el('tbody',{},...rows.map(r=>el('tr',{onclick:()=>goTo(g,r[11],r[12]),title:'الانتقال إلى الحصة'},...r.slice(0,11).map((v,i)=>i===8?el('td',{},el('span',{class:'st '+(v==='empty'?'e':'f'),text:v})):el('td',{class:i===6||i===7?'l':'',text:v,dir:i>4?'auto':null}))))));
@@ -311,6 +311,20 @@ function renderEx(body){
   body.replaceChildren(el('div',{class:'row2',style:'margin-bottom:14px'},el('label',{for:'exg',text:'الصف'}),Object.assign(sg,{id:'exg'})),el('div',{style:'display:grid;gap:10px'},bW,bP),el('p',{class:'note',text:'Word يُبنى داخل قالبك المعتمد (الترويسة والتذييل كما هما). PDF: تفتح نافذة الطباعة، اختر «Save as PDF» والاتجاه أفقي (Landscape) وأوقف «Headers and footers».'}),(isAdmin()?el('div',{class:'row2',style:'margin-top:14px'},bC,bJ):null),msg);
 }
 
+/* ---------- مدير النظام: رمز يتحقق منه الخادم ---------- */
+let admPending=null;
+function requireAdmin(then){if(isAdmin()){then();return}admPending=then;const m=$('#adminLogin');m.hidden=false;$('#admMsg').textContent='';const i=$('#admCode');i.value='';setTimeout(()=>i.focus(),50)}
+function closeAdmin(){$('#adminLogin').hidden=true;admPending=null}
+async function adminLogin(){
+  const v=$('#admCode').value.replace(/\s+/g,'');if(!v){$('#admMsg').textContent='أدخل الرمز';return}
+  const prev=ADMINCODE;ADMINCODE=v;$('#admGo').disabled=true;
+  try{const j=await apiGet();if(!j.me||j.me.type!=='admin')throw Object.assign(new Error('الرمز غير صحيح'),{api:true});
+    applyServer(j);const st=ss();if(st)try{st.setItem(AKEY,v)}catch(_){}
+    const f=admPending;$('#adminLogin').hidden=true;admPending=null;
+    $('#login').hidden=true;renderTabs();renderGrid();refreshAll();setStore('db','متصل بقاعدة البيانات');startPoll();if(f)f()
+  }catch(e){ADMINCODE=prev;$('#admMsg').textContent=e.api?e.message:'تعذّر الاتصال. أعد المحاولة.'}
+  finally{$('#admGo').disabled=false}
+}
 /* ---------- boot + login (اختيار المرحلة ← الصف ← المادة) ---------- */
 let ROLES=[];
 async function apiRoles(){const u=new URL(CFGW.API_URL);u.searchParams.set('roles','1');const r=await fetch(u.toString(),{redirect:'follow',cache:'no-store'});const j=await r.json();if(j.error)throw apiError(j);return j.roles||[]}
@@ -332,6 +346,7 @@ async function showLogin(msg){
     if(name.length<2){$('#loginMsg').textContent='أدخل اسمك (يُسجَّل مع كل تعديل)';return}
     S.name=name;try{localStorage.setItem(NKEY,name);localStorage.setItem(RKEY,sj.value+'@'+sg.value)}catch(_){}
     ROLEKEY=sj.value+'@'+sg.value;TOKEN='';IDTOKEN='';await connect()};
+  $('#loginAdmin').onclick=()=>requireAdmin(()=>{});
   const gb=$('#loginGoogle');
   if(CFGW.CLIENT_ID&&!gb.dataset.on){gb.hidden=false;gb.dataset.on='1';gb.onclick=()=>{
     const go2=()=>{google.accounts.id.initialize({client_id:CFGW.CLIENT_ID,callback:r=>{IDTOKEN=r.credential;TOKEN='';ROLEKEY='';connect()}});google.accounts.id.prompt()};
@@ -340,21 +355,23 @@ async function showLogin(msg){
 async function connect(){
   setStore('pending','جارٍ الاتصال…');
   try{const j=await apiGet();applyServer(j);
-    $('#login').hidden=true;renderTabs();renderGrid();refreshAll();setStore('db','متصل بالشيت');startPoll()
+    $('#login').hidden=true;renderTabs();renderGrid();refreshAll();setStore('db','متصل بقاعدة البيانات');startPoll()
   }catch(e){if(e.api){ROLEKEY='';showLogin(e.message)}else{setStore('warn','تعذّر الاتصال بالخدمة');showLogin('تعذّر الاتصال. تحقق من الشبكة ثم أعد المحاولة.')}}
 }
-function switchRole(){stopPoll();S.me=null;S.role=null;S.ready=false;ROLEKEY='';TOKEN='';IDTOKEN='';renderRole();renderGrid();showLogin('')}
+function switchRole(){stopPoll();ADMINCODE='';{const st=ss();if(st)try{st.removeItem(AKEY)}catch(_){}}S.me=null;S.role=null;S.ready=false;ROLEKEY='';TOKEN='';IDTOKEN='';renderRole();renderGrid();showLogin('')}
 async function boot(){
   try{S.name=localStorage.getItem(NKEY)||''}catch(e){}
   try{LOGOS=await (await fetch('data/logos.json')).json()}catch(e){LOGOS={school:'',diploma:'',aiasc:''}}
   renderTop();renderRole();renderTabs();renderGrid();renderChips();renderDock();
+  $('#admGo').onclick=adminLogin;$('#admCancel').onclick=closeAdmin;$('#admCode').onkeydown=e=>{if(e.key==='Enter')adminLogin();if(e.key==='Escape')closeAdmin()};
   $('#chipRole').style.cursor='pointer';$('#chipRole').title='تغيير الدور';$('#chipRole').onclick=switchRole;
   if(!CFGW.API_URL){setStore('warn','لم يُضبط رابط الخدمة');return}
+  {const st=ss();const a=st&&st.getItem(AKEY);if(a){ADMINCODE=a;try{const j=await apiGet();if(j.me&&j.me.type==='admin'){applyServer(j);$('#login').hidden=true;renderTabs();renderGrid();refreshAll();setStore('db','متصل بقاعدة البيانات');startPoll();return}}catch(e){}ADMINCODE='';try{st.removeItem(AKEY)}catch(_){}}}
   const t=new URLSearchParams(location.search).get('t');
   if(t){TOKEN=t.replace(/\s+/g,'');history.replaceState(null,'',location.pathname+location.hash);await connect();return}
   let last='';try{last=localStorage.getItem(RKEY)||''}catch(_){}
   if(last&&S.name){ROLEKEY=last;await connect()}else showLogin('');
-  if(location.hash==='#gaps')openWin('gaps');
+  if(location.hash==='#gaps')requireAdmin(()=>openWin('gaps'));
 }
 boot();
 })();

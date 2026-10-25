@@ -40,7 +40,18 @@
   <input id="loginName" type="text" maxlength="60" autocomplete="name" placeholder="اسمك (يُسجَّل مع كل تعديل)">
   <p id="loginMsg" role="alert"></p>
   <button class="btn p" id="loginGo" type="button">دخول</button>
+  <button class="btn" id="loginAdmin" type="button">دخول مدير النظام</button>
   <button class="btn" id="loginGoogle" type="button" hidden>دخول المسؤول بحساب Google</button>
+</div></div>
+
+<div id="adminLogin" class="ovl" hidden role="dialog" aria-modal="true" aria-labelledby="admT"><div class="card">
+  <h2 id="admT">دخول مقيّد · مدير النظام</h2>
+  <p style="margin:0;color:var(--muted)">هذه الوظيفة لمدير النظام فقط. أدخل رمز الدخول.</p>
+  <label for="admCode">رمز مدير النظام</label>
+  <input id="admCode" type="password" autocomplete="off" spellcheck="false">
+  <p id="admMsg" role="alert" class="msg"></p>
+  <button class="btn p" id="admGo" type="button">دخول</button>
+  <button class="btn" id="admCancel" type="button">إلغاء</button>
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
