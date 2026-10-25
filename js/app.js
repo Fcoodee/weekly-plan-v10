@@ -15,7 +15,7 @@ const dmy=d=>d.split('-').reverse().join(' - ');
 
 /* ---------- state ---------- */
 const CFGW=window.WP_CONFIG||{};
-const S={grade:'3A',day:0,store:'pending',canWrite:true,locked:false,ready:false,gapSubj:'',role:null,me:null,name:'',dataF:{g:'',s:'',st:''},pv:{g:'3A',p:'cover'},exp:{g:'3A'}};
+const S={uiAdmin:false,adminView:false,grade:'3A',day:0,store:'pending',canWrite:true,locked:false,ready:false,gapSubj:'',role:null,me:null,name:'',dataF:{g:'',s:'',st:''},pv:{g:'3A',p:'cover'},exp:{g:'3A'}};
 let LOGOS={};
 const DATA={};GKEYS.forEach(g=>{DATA[g]={tt:{0:[],1:[],2:[],3:[],4:[]},rows:{}}});
 const cellKey=(g,d,p)=>`${g}_${d}_${p}`;
@@ -26,26 +26,28 @@ function allRows(){const r=[];if(!S.ready)return r;for(const g of GKEYS)for(let 
 const gradeCount=g=>{let f=0;for(let d=0;d<5;d++)for(const s of SESS)if(filled(g,d,s.n))f++;return f};
 const dayCount=(g,d)=>SESS.filter(s=>filled(g,d,s.n)).length;
 const gapsList=()=>allRows().filter(r=>r.status==='empty');
-const isAdmin=()=>!!(S.me&&S.me.type==='admin');
+const isSrvAdmin=()=>!!(S.me&&S.me.type==='admin');
+const isAdmin=()=>!!S.uiAdmin||isSrvAdmin();
 
 /* ---------- الخدمة: Google Apps Script فوق Google Sheets ---------- */
 const NKEY='wp10_name',POLL_MS=15000;
-let TOKEN='',IDTOKEN='',ROLEKEY='',ADMINCODE='',pollTimer=null;const RKEY='wp10_role',AKEY='wp10_admin';
+let TOKEN='',IDTOKEN='',ROLEKEY='',pollTimer=null;const RKEY='wp10_role',AKEY='wp10_admin';
 const timers={},inflight={},dirty={};
 function ss(){try{return window.sessionStorage}catch(e){return null}}
 function setStore(mode,txt){S.store=mode;const c=$('#chipStore');c.className='chip '+(mode==='db'?'ok':mode==='ro'||mode==='warn'?'warn':'');$('span',c).textContent=txt}
 function apiError(j){const e=new Error(j.error);e.api=true;return e}
 async function apiGet(){
-  const u=new URL(CFGW.API_URL);if(ADMINCODE)u.searchParams.set('adminCode',ADMINCODE);else if(IDTOKEN)u.searchParams.set('idToken',IDTOKEN);else if(TOKEN)u.searchParams.set('t',TOKEN);else u.searchParams.set('role',ROLEKEY);
+  const u=new URL(CFGW.API_URL);if(IDTOKEN)u.searchParams.set('idToken',IDTOKEN);else if(TOKEN)u.searchParams.set('t',TOKEN);else u.searchParams.set('role',ROLEKEY);
   const r=await fetch(u.toString(),{redirect:'follow',cache:'no-store'});const j=await r.json();if(j.error)throw apiError(j);return j}
 async function apiPost(body){
-  const r=await fetch(CFGW.API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign(ADMINCODE?{adminCode:ADMINCODE}:IDTOKEN?{idToken:IDTOKEN}:TOKEN?{token:TOKEN}:{role:ROLEKEY},body))});
+  const r=await fetch(CFGW.API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign(IDTOKEN?{idToken:IDTOKEN}:TOKEN?{token:TOKEN}:{role:ROLEKEY},body))});
   const j=await r.json();if(j.error)throw apiError(j);return j}
 function applyServer(j){
   let changed=!S.ready;
   S.me=j.me;S.locked=!!j.locked;
   if(j.me&&j.me.type==='role'){const i=j.me.role.lastIndexOf('@');S.role={s:j.me.role.slice(0,i),g:j.me.role.slice(i+1)}}else S.role=null;
-  S.canWrite=!S.locked||isAdmin();
+  if(S.adminView)S.role=null;
+  S.canWrite=!S.locked||isSrvAdmin();
   for(const g of GKEYS){for(const r of (j.grades[g]||[])){
     const m=/^(\w+)_(\d)_(\d)$/.exec(r.key);if(!m)continue;const d=+m[2],p=+m[3];
     DATA[g].tt[d][p-1]=r.subject;
@@ -75,8 +77,8 @@ addEventListener('beforeunload',e=>{if(Object.keys(timers).length||Object.keys(i
 
 /* ---------- الأدوار: الصلاحية الفعلية يفرضها الخادم؛ الواجهة تعكسها فقط ---------- */
 const roleKey=r=>r.s+'@'+r.g;
-function canEditCell(g,sub){if(!S.canWrite)return false;return !S.role||(S.role.g===g&&S.role.s===sub)}
-function renderRole(){const c=$('#chipRole');c.className='chip '+(S.me?'ok':'');$('span',c).textContent=!S.me?'غير متصل':S.role?`دور: ${roleKey(S.role)}`:'دور: مسؤول (الكل)'+(S.locked?' · الأسبوع مقفل':'')}
+function canEditCell(g,sub){if(!S.canWrite||S.adminView)return false;return !S.role||(S.role.g===g&&S.role.s===sub)}
+function renderRole(){const c=$('#chipRole');c.className='chip '+(S.me?'ok':'');$('span',c).textContent=!S.me?'غير متصل':S.role?`دور: ${roleKey(S.role)}`+(S.uiAdmin?' · مدير النظام':''):(S.adminView?'مدير النظام (عرض)':'دور: مسؤول (الكل)')+(S.locked?' · الأسبوع مقفل':'')}
 function roleCells(r){let n=0;for(let d=0;d<5;d++)for(const s of SESS)if(subj(r.g,d,s.n)===r.s)n++;return n}
 
 /* ---------- main workspace ---------- */
@@ -286,7 +288,7 @@ function renderData(body){
 function renderRoles(body){
   const nm=el('input',{type:'text',id:'roleName',placeholder:'اسمك (يُسجَّل مع كل تعديل)',value:S.name,maxlength:'60','aria-label':'اسم المحرّر',style:'padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);min-width:0;width:100%',oninput:e=>{S.name=e.target.value;try{localStorage.setItem(NKEY,S.name)}catch(_){}}});
   const info=!S.me?el('p',{class:'note',text:'غير متصل.'}):S.role?el('p',{text:`دورك: معلم مادة ${S.role.s} · Grade ${S.role.g}. يُفتح لك ${roleCells(S.role)} حصة فقط، وبقية الحصص للقراءة.`}):el('p',{text:'دورك: مسؤول. تعدّل كل الحصص وتقفل الأسبوع.'});
-  const lk=isAdmin()?el('button',{class:'btn',onclick:async()=>{try{await apiPost({action:'lock',locked:!S.locked});S.locked=!S.locked;S.canWrite=!S.locked||isAdmin();toast(S.locked?'تم قفل الأسبوع':'تم فتح الأسبوع');renderRole();renderRoles(body);renderGrid()}catch(e){toast(e.message)}}},S.locked?'فتح الأسبوع':'قفل الأسبوع'):null;
+  const lk=isSrvAdmin()?el('button',{class:'btn',onclick:async()=>{try{await apiPost({action:'lock',locked:!S.locked});S.locked=!S.locked;S.canWrite=!S.locked||isSrvAdmin();toast(S.locked?'تم قفل الأسبوع':'تم فتح الأسبوع');renderRole();renderRoles(body);renderGrid()}catch(e){toast(e.message)}}},S.locked?'فتح الأسبوع':'قفل الأسبوع'):null;
   body.replaceChildren(el('div',{style:'display:grid;gap:12px'},el('label',{for:'roleName',text:'الاسم'}),nm,info,lk,S.locked?el('p',{class:'note',text:'الأسبوع مقفل: التعديل متاح للمسؤول فقط.'}):null),el('p',{class:'note',text:'الصلاحية يفرضها الخادم برمز الدور. الاسم المُدخل غير موثّق ويظهر في سجل التعديلات.'}));
 }
 function renderPv(body){
@@ -315,15 +317,22 @@ function renderEx(body){
 let admPending=null;
 function requireAdmin(then){if(isAdmin()){then();return}admPending=then;const m=$('#adminLogin');m.hidden=false;$('#admMsg').textContent='';const i=$('#admCode');i.value='';setTimeout(()=>i.focus(),50)}
 function closeAdmin(){$('#adminLogin').hidden=true;admPending=null}
+async function fetchAccessCode(){const r=await fetch('access.txt',{cache:'no-store'});if(!r.ok)throw new Error('تعذّر تحميل ملف الرمز');return (await r.text()).replace(/\s+/g,'')}
 async function adminLogin(){
   const v=$('#admCode').value.replace(/\s+/g,'');if(!v){$('#admMsg').textContent='أدخل الرمز';return}
-  const prev=ADMINCODE;ADMINCODE=v;$('#admGo').disabled=true;
-  try{const j=await apiGet();if(!j.me||j.me.type!=='admin')throw Object.assign(new Error('الرمز غير صحيح'),{api:true});
-    applyServer(j);const st=ss();if(st)try{st.setItem(AKEY,v)}catch(_){}
+  $('#admGo').disabled=true;
+  try{const want=await fetchAccessCode();if(!want||v!==want){$('#admMsg').textContent='الرمز غير صحيح';return}
+    S.uiAdmin=true;const st=ss();if(st)try{st.setItem(AKEY,'1')}catch(_){}
     const f=admPending;$('#adminLogin').hidden=true;admPending=null;
-    $('#login').hidden=true;renderTabs();renderGrid();refreshAll();setStore('db','متصل بقاعدة البيانات');startPoll();if(f)f()
-  }catch(e){ADMINCODE=prev;$('#admMsg').textContent=e.api?e.message:'تعذّر الاتصال. أعد المحاولة.'}
+    if(!S.ready){await connectAdminView()}else{renderChips();renderRole();renderDock()}
+    if(f)f()
+  }catch(e){$('#admMsg').textContent=e.message||'تعذّر الاتصال'}
   finally{$('#admGo').disabled=false}
+}
+async function connectAdminView(){
+  if(!ROLES.length){try{ROLES=await apiRoles()}catch(e){toast('تعذّر تحميل قائمة الأدوار');return}}
+  if(!ROLES.length)return;
+  S.adminView=true;ROLEKEY=ROLES[0].key;TOKEN='';IDTOKEN='';await connect();renderRole()
 }
 /* ---------- boot + login (اختيار المرحلة ← الصف ← المادة) ---------- */
 let ROLES=[];
@@ -345,7 +354,7 @@ async function showLogin(msg){
     if(!sg.value||!sj.value){$('#loginMsg').textContent='اختر الصف والمادة';return}
     if(name.length<2){$('#loginMsg').textContent='أدخل اسمك (يُسجَّل مع كل تعديل)';return}
     S.name=name;try{localStorage.setItem(NKEY,name);localStorage.setItem(RKEY,sj.value+'@'+sg.value)}catch(_){}
-    ROLEKEY=sj.value+'@'+sg.value;TOKEN='';IDTOKEN='';await connect()};
+    S.adminView=false;ROLEKEY=sj.value+'@'+sg.value;TOKEN='';IDTOKEN='';await connect()};
   $('#loginAdmin').onclick=()=>requireAdmin(()=>{});
   const gb=$('#loginGoogle');
   if(CFGW.CLIENT_ID&&!gb.dataset.on){gb.hidden=false;gb.dataset.on='1';gb.onclick=()=>{
@@ -358,7 +367,7 @@ async function connect(){
     $('#login').hidden=true;renderTabs();renderGrid();refreshAll();setStore('db','متصل بقاعدة البيانات');startPoll()
   }catch(e){if(e.api){ROLEKEY='';showLogin(e.message)}else{setStore('warn','تعذّر الاتصال بالخدمة');showLogin('تعذّر الاتصال. تحقق من الشبكة ثم أعد المحاولة.')}}
 }
-function switchRole(){stopPoll();ADMINCODE='';{const st=ss();if(st)try{st.removeItem(AKEY)}catch(_){}}S.me=null;S.role=null;S.ready=false;ROLEKEY='';TOKEN='';IDTOKEN='';renderRole();renderGrid();showLogin('')}
+function switchRole(){stopPoll();S.uiAdmin=false;S.adminView=false;{const st=ss();if(st)try{st.removeItem(AKEY)}catch(_){}}S.me=null;S.role=null;S.ready=false;ROLEKEY='';TOKEN='';IDTOKEN='';renderRole();renderGrid();showLogin('')}
 async function boot(){
   try{S.name=localStorage.getItem(NKEY)||''}catch(e){}
   try{LOGOS=await (await fetch('data/logos.json')).json()}catch(e){LOGOS={school:'',diploma:'',aiasc:''}}
@@ -366,11 +375,11 @@ async function boot(){
   $('#admGo').onclick=adminLogin;$('#admCancel').onclick=closeAdmin;$('#admCode').onkeydown=e=>{if(e.key==='Enter')adminLogin();if(e.key==='Escape')closeAdmin()};
   $('#chipRole').style.cursor='pointer';$('#chipRole').title='تغيير الدور';$('#chipRole').onclick=switchRole;
   if(!CFGW.API_URL){setStore('warn','لم يُضبط رابط الخدمة');return}
-  {const st=ss();const a=st&&st.getItem(AKEY);if(a){ADMINCODE=a;try{const j=await apiGet();if(j.me&&j.me.type==='admin'){applyServer(j);$('#login').hidden=true;renderTabs();renderGrid();refreshAll();setStore('db','متصل بقاعدة البيانات');startPoll();return}}catch(e){}ADMINCODE='';try{st.removeItem(AKEY)}catch(_){}}}
+  {const st=ss();if(st&&st.getItem(AKEY)==='1')S.uiAdmin=true}
   const t=new URLSearchParams(location.search).get('t');
   if(t){TOKEN=t.replace(/\s+/g,'');history.replaceState(null,'',location.pathname+location.hash);await connect();return}
   let last='';try{last=localStorage.getItem(RKEY)||''}catch(_){}
-  if(last&&S.name){ROLEKEY=last;await connect()}else showLogin('');
+  if(last&&S.name){ROLEKEY=last;await connect()}else if(S.uiAdmin){await connectAdminView()}else showLogin('');
   if(location.hash==='#gaps')requireAdmin(()=>openWin('gaps'));
 }
 boot();
